@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMGPRESS — Image Compressor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F7F6F2;
+    --fg: #111111;
+    --border: #1a1a1a;
+    --border-light: #D4D3CE;
+    --green: #22C55E;
+    --red: #EF4444;
+    --muted: #888882;
+    --card-bg: #FFFFFF;
+    --drop-bg: #FAFAF7;
+  }
+
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    background: var(--bg);
+    color: var(--fg);
+    min-height: 100vh;
+    padding: 48px 24px 80px;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  header h1 {
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  header p {
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ── Drop zone ── */
+  .drop-zone {
+    border: 1px solid var(--border);
+    background: var(--drop-bg);
+    padding: 52px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+    margin-bottom: 40px;
+  }
+
+  .drop-zone.drag-over {
+    background: #EFEDE7;
+  }
+
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .drop-zone .icon {
+    font-size: 32px;
+    margin-bottom: 16px;
+    display: block;
+    color: var(--muted);
+  }
+
+  .drop-zone .label {
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fg);
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .drop-zone .sublabel {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── Section title ── */
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  /* ── Cards ── */
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    position: relative;
+  }
+
+  .card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .card-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .card-value {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    word-break: break-all;
+  }
+
+  .card-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-light);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .card-sizes {
+    font-size: 13px;
+    letter-spacing: 0.03em;
+  }
+
+  .card-sizes .arrow {
+    color: var(--muted);
+    margin: 0 6px;
+  }
+
+  .card-sizes .savings {
+    color: var(--green);
+    font-weight: 700;
+    margin-left: 8px;
+  }
+
+  .card-sizes .optimal {
+    color: var(--muted);
+    font-style: italic;
+    margin-left: 8px;
+  }
+
+  .card-status {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .card-status.processing { color: var(--muted); }
+  .card-status.done { color: var(--green); }
+  .card-status.optimal { color: var(--muted); }
+  .card-status.error { color: var(--red); }
+
+  /* ── Download button ── */
+  .btn-download {
+    display: inline-block;
+    padding: 6px 14px;
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    background: transparent;
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .btn-download:hover {
+    background: var(--green);
+    color: #fff;
+  }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── Progress bar in processing card ── */
+  .progress-bar {
+    height: 2px;
+    background: var(--border-light);
+    margin-top: 14px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .progress-bar::after {
+    content: '';
+    position: absolute;
+    left: -40%;
+    top: 0;
+    width: 40%;
+    height: 100%;
+    background: var(--fg);
+    animation: slide 1s linear infinite;
+  }
+
+  @keyframes slide {
+    to { left: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>IMGPRESS</h1>
+    <p>Lossless-first image compressor — JPEG / PNG / WebP</p>
+  </header>
+
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple>
+    <span class="icon">&#8659;</span>
+    <span class="label">Drop images here or click to select</span>
+    <span class="sublabel">Max 20 MB &nbsp;·&nbsp; JPEG, PNG, WebP</span>
+  </div>
+
+  <div class="section-title">History</div>
+  <div class="cards" id="cards">
+    <div class="empty" id="emptyState">No files yet</div>
+  </div>
+
+</div>
+
+<script>
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const cardsEl = document.getElementById('cards');
+  const emptyState = document.getElementById('emptyState');
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function removeEmpty() {
+    if (emptyState.parentNode) emptyState.remove();
+  }
+
+  function createProcessingCard(filename) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="card-row">
+        <div class="card-field">
+          <div class="card-value">${escapeHtml(filename)}</div>
+          <div class="card-label">Filename</div>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <span class="card-sizes">—</span>
+        <span class="card-status processing">Processing...</span>
+      </div>
+      <div class="progress-bar"></div>
+    `;
+    return card;
+  }
+
+  function updateCard(card, result) {
+    card.querySelector('.progress-bar')?.remove();
+
+    if (result.error) {
+      card.querySelector('.card-value').textContent = result.filename;
+      card.querySelector('.card-sizes').innerHTML = escapeHtml(result.error);
+      card.querySelector('.card-status').className = 'card-status error';
+      card.querySelector('.card-status').textContent = 'Error';
+      return;
+    }
+
+    const origStr = formatBytes(result.original_size);
+    const compStr = formatBytes(result.compressed_size);
+
+    let sizesHtml;
+    let statusText, statusClass;
+
+    if (result.already_optimal) {
+      sizesHtml = `${origStr}<span class="optimal"> — already optimal</span>`;
+      statusText = 'Optimal';
+      statusClass = 'optimal';
+    } else {
+      sizesHtml = `${origStr}<span class="arrow">→</span>${compStr}<span class="savings">-${result.saved_pct}%</span>`;
+      statusText = 'Done';
+      statusClass = 'done';
+    }
+
+    card.innerHTML = `
+      <div class="card-row">
+        <div class="card-field">
+          <div class="card-value">${escapeHtml(result.original_name)}</div>
+          <div class="card-label">Filename</div>
+        </div>
+        <div class="card-field" style="text-align:right">
+          <div class="card-value">${result.format}</div>
+          <div class="card-label">Format</div>
+        </div>
+      </div>
+      <div class="card-bottom">
+        <span class="card-sizes">${sizesHtml}</span>
+        <span style="display:flex;align-items:center;gap:12px">
+          ${!result.already_optimal ? `<a class="btn-download" href="/download/${result.id}" download="${escapeHtml(result.compressed_name)}">Download</a>` : ''}
+          <span class="card-status ${statusClass}">${statusText}</span>
+        </span>
+      </div>
+    `;
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  async function processFile(file) {
+    removeEmpty();
+    const card = createProcessingCard(file.name);
+    cardsEl.insertBefore(card, cardsEl.firstChild);
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const res = await fetch('/compress', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        updateCard(card, { error: data.error || 'Server error', filename: file.name });
+      } else {
+        updateCard(card, data);
+      }
+    } catch (e) {
+      updateCard(card, { error: 'Network error', filename: file.name });
+    }
+  }
+
+  function handleFiles(files) {
+    [...files].forEach(f => processFile(f));
+  }
+
+  fileInput.addEventListener('change', () => {
+    handleFiles(fileInput.files);
+    fileInput.value = '';
+  });
+
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    handleFiles(e.dataTransfer.files);
+  });
+</script>
+</body>
+</html>
