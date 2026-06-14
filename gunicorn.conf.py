@@ -7,8 +7,14 @@ Env overrides: WEB_BIND, WEB_WORKERS, WEB_TIMEOUT.
 import multiprocessing
 import os
 
-# Bind only to localhost — Nginx is expected to terminate TLS and proxy in.
-bind = os.environ.get("WEB_BIND", "127.0.0.1:8080")
+# On PaaS (Render/Railway/Heroku) the platform injects $PORT and routes
+# external HTTPS to it, so bind to all interfaces on that port. Otherwise
+# bind to localhost (the VPS+Nginx setup, where Nginx proxies in).
+_port = os.environ.get("PORT")
+if _port:
+    bind = f"0.0.0.0:{_port}"
+else:
+    bind = os.environ.get("WEB_BIND", "127.0.0.1:8080")
 
 # The disk-backed store (store.py) is shared across workers on the same host,
 # so multiple workers are safe. Default to a CPU-aware count; override for

@@ -1,0 +1,16 @@
+# Render Blueprint — auto-deploys imgpress from this GitHub repo.
+# https://render.com → New → Blueprint → pick this repo.
+services:
+  - type: web
+    name: imgpress
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -c gunicorn.conf.py app:app
+    envVars:
+      # Free tier has ~512 MB RAM and Pillow decodes images into memory,
+      # so keep the worker count low to avoid OOM.
+      - key: WEB_WORKERS
+        value: "2"
+      - key: PYTHON_VERSION
+        value: "3.12.8"
